@@ -1,0 +1,6 @@
+{
+  "name": "Tech Job Radar - coleta diária",
+  "schedule": "0 9 * * 1-5",
+  "timezone": "America/Sao_Paulo",
+  "prompt": "Pesquise vagas tech atuais em páginas públicas de carreiras das empresas. Respeite os termos de acesso e não contorne autenticação. Extraia apenas fatos explícitos da página, sem inventar salários, senioridade ou requisitos. Para cada vaga gere title, company, location, description, source_url e skills. source_url deve apontar para a vaga original, nunca para resultados de pesquisa. Salve uma lista JSON em agent/collected_jobs.json, sem credenciais. Execute .venv/Scripts/python.exe agent/mock_crawler.py --input agent/collected_jobs.json. O script lê INGEST_API_KEY do .env e envia POST para a API local. Não leia currículos, arquivos privados nem revele variáveis de ambiente. Se a fonte estiver indisponível, relate o erro sem fabricar vagas."
+}
