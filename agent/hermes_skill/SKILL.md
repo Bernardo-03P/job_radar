@@ -1,7 +1,7 @@
 ---
 name: job-radar
 description: Consultar vagas e currículos do Job Radar, gerar para uma vaga escolhida com PDF guardado no PC e enviar a versão ao dono no Telegram, somente quando solicitado.
-version: 1.3.0
+version: 1.4.0
 platforms: [windows]
 metadata:
   hermes:
@@ -101,11 +101,22 @@ Em PowerShell:
    `& "{{WORKSPACE}}/.venv/Scripts/python.exe" "{{WORKSPACE}}/agent/hermes_bridge.py" buscar`
 5. Só confirme conclusão para `status=completed` ou `partial`. Se `busy`, explique que
    outra coleta está em andamento; não dispare uma segunda. Em falha/timeout, consulte
-   o status e as vagas antes de repetir. Depois use `vagas` para apresentar IDs e links
-   reais e diferencie registros novos dos já existentes.
+   o status antes de repetir. Apresente IDs e links de `matched_jobs` retornados
+   pela busca e diferencie-os de `new_jobs`. Não execute `vagas` depois da busca:
+   a API já terá sido desligada pela sessão temporária.
 6. Responda no chat atual com o resultado; o comando não dispara um segundo aviso
    automático no Telegram. A busca não gera currículos, não envia candidatura e não
    modifica o agendamento das 9h.
+
+## Operação por sessão de busca
+
+Somente o Hermes permanece ativo entre buscas. O agendamento das 9h usa
+`agent.search_session --scheduled --input .runtime/hermes-candidates.json`;
+o helper `buscar` também usa a sessão temporária. Ela liga API e banco, sem abrir
+o site, e encerra os recursos que iniciou ao terminar ou falhar. Serviços já
+abertos pelo dono permanecem ativos. Não ligue o supervisor contínuo nem reative
+a tarefa Windows JobRadar-Local-Startup. Fora da busca, consultas ao banco e
+currículos podem ficar indisponíveis; explique isso sem fingir que foram consultados.
 
 ## Gerar para uma vaga escolhida
 

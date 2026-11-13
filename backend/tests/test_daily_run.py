@@ -54,6 +54,7 @@ def test_daily_search_notifies_once_and_never_generates_resume(automation):
     notify, saved, posts = automation
     report = daily_run.run_once(CONFIG, now=NOW)
     assert report["selected"] == 1 and len(report["new_jobs"]) == 1
+    assert report["matched_jobs"] == report["new_jobs"]
     assert report["minimum_results"] == 10
     assert report["meets_target"] is False
     assert report["shortfall"] == 9
@@ -64,6 +65,7 @@ def test_daily_search_notifies_once_and_never_generates_resume(automation):
     assert "/resumes" not in str(posts)
     refreshed = daily_run.run_once(CONFIG, now=NOW, force=True)
     assert refreshed["new_jobs"] == []
+    assert len(refreshed["matched_jobs"]) == 1
     assert len(posts) == 2 and len(saved) == 1
     notify.assert_called_once()
 

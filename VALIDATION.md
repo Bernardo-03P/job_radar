@@ -6,6 +6,30 @@ Os registros anteriores preservam o estado histórico de cada etapa; veja a evid
 
 ## Auditoria final local
 
+### Operação temporária por busca — atualização posterior em 13/11/2026
+
+- Preferência atual: manter Hermes ativo; ligar API/banco somente durante buscas
+  e desligá-los ao terminar. Site não é necessário para coleta.
+- `agent.search_session` usa lock, preserva serviços previamente ligados e encerra
+  os recursos próprios em `finally`. Erro no encerramento é registrado e não vira sucesso.
+- Tarefa Windows contínua desativada; cron Hermes mantido em dias úteis às 9h,
+  com chamada à sessão temporária. Skill 1.4.0 instalada.
+- Primeiro teste de partida a frio falhou: API não confirmou prontidão e o
+  encerramento do PID foi inicialmente reportado como falha. Não contado como sucesso.
+  Ajustados o modo de criação do processo temporário, a parada idempotente e o
+  endereço do banco local para loopback IPv4 explícito, preservando credenciais.
+- Segundo teste real: 18h08–18h09, quatro vagas revalidadas, nenhuma nova,
+  sem mensagem adicional. Sessão `closed`, `cleanup_errors=[]`, API iniciada,
+  banco previamente parado e site nunca iniciado. Confirmado depois: nenhuma
+  porta 3000/8000/55432 escutando e container PostgreSQL parado.
+- Hermes gateway confirmado disponível; cron habilitado e próximo horário
+  16/11/2026 09h de São Paulo. Busca agendada já concluída retorna
+  `services_started=false`, sem religar recursos.
+- 39 testes direcionados passaram, incluindo sucesso, falha de coleta, falha de
+  partida, falha de encerramento e preservação de serviços manuais. Ruff/Bandit passaram.
+- Resultado manual passa a incluir `matched_jobs` com IDs/links já validados,
+  para o bot responder sem consultar a API depois do desligamento.
+
 ### Ampliação das fontes e fechamento em 13/11/2026
 
 - Nove fontes configuradas: RD Station, Starian, Softplan, Geopixel, Leega, Smarthis

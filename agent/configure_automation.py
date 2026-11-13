@@ -34,7 +34,9 @@ Salve .runtime/hermes-candidates.json como objeto JSON com checked_at (horário 
 atual com fuso) e jobs (lista, vazia se nenhuma vaga validada). Cada item contém title,
 company, location, description, source_url original e skills extraídas da descrição.
 Preserve título e descrição publicados. Para fontes inacessíveis, não fabrique resultados.
-Execute .venv/Scripts/python.exe -m agent.daily_run --scheduled --input .runtime/hermes-candidates.json.
+Execute .venv/Scripts/python.exe -m agent.search_session --scheduled --input .runtime/hermes-candidates.json.
+Essa sessão liga somente API e banco necessários e desliga os recursos que iniciou
+ao terminar, inclusive em falha. Não ligue o site nem o supervisor contínuo.
 O script consulta também fontes automáticas, valida o perfil, importa sem duplicatas
 e envia um único resumo ao proprietário privado do bot existente. Não use outra ferramenta
 para enviar Telegram, não repita um aviso unconfirmed e não gere currículos nesta tarefa.

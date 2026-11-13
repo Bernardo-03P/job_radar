@@ -102,13 +102,13 @@ def generate_selected(config, job_id, source_id, confirmed=False):
 
 def search_now(config, include_discovery=False):
     require_private_context(config)
-    arguments = [sys.executable, "-m", "agent.daily_run", "--run-now", "--no-notify"]
+    arguments = [sys.executable, "-m", "agent.search_session", "--run-now", "--no-notify"]
     if include_discovery:
         arguments.extend(["--input", str(ROOT / ".runtime/telegram-candidates.json")])
     try:
         response = subprocess.run(arguments, cwd=ROOT, stdin=subprocess.DEVNULL,
                                   stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-                                  text=True, encoding="utf-8", timeout=240, check=False,
+                                  text=True, encoding="utf-8", timeout=900, check=False,
                                   creationflags=0x08000000 if os.name == "nt" else 0)
         if response.returncode:
             raise ValueError()

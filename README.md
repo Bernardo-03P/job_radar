@@ -310,6 +310,28 @@ Para parar o PostgreSQL preservando os dados: `docker compose stop`.
 
 ## Estado da coleta e auditoria
 
+### Operação temporária (preferência atual do proprietário)
+
+Somente o Hermes permanece ativo. A tarefa Windows `JobRadar-Local-Startup` está
+desativada: não há supervisor contínuo ligando o projeto no login.
+O cron existente do Hermes continua às 9h nos dias úteis, com recuperação de atrasos.
+Depois da descoberta pública, ele executa `agent.search_session --scheduled`,
+que liga somente banco e API para importar as vagas e enviar o resumo; encerra
+os recursos iniciados pela sessão em um bloco `finally`, mesmo em falhas normais.
+O site não é iniciado pela coleta. Serviços já abertos manualmente são preservados.
+O Docker Desktop pode continuar disponível para outros usos; o container do projeto
+é parado, sem apagar banco ou volumes. Encerramento forçado do processo/PC pode
+impedir o `finally`; consulte `.runtime/search-session.json` se houver interrupção.
+
+A busca manual pelo helper do Telegram usa o mesmo ciclo. Para uma busca local:
+`.venv/Scripts/python.exe -m agent.search_session --run-now`.
+Para trabalhar no site, inicie os serviços manualmente. Com o banco/API parados,
+consultas de currículos pelo bot ficam indisponíveis até sua próxima inicialização.
+O instalador da tarefa Windows deixa o supervisor desativado por padrão;
+`-Continuous` é uma opção explícita para mudar essa preferência.
+
+As seções históricas abaixo descrevem a implantação anterior, continuamente ativa.
+
 Em 13/11/2026 foram ativados cron com recuperação, supervisor Windows, aviso privado
 e geração sob demanda pelo bot com original opcional protegido. O Hermes encontrou
 o Programa de Estágio Tech.AI 2027 da Blip (ID 14) e confirmou o resumo no Telegram.

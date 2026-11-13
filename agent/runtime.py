@@ -45,12 +45,12 @@ def checked(arguments, timeout=60, cwd=None, env=None):
         raise ValueError("Um serviço local não confirmou a operação; confira o diagnóstico.")
 
 
-def spawn(arguments, log_name):
+def spawn(arguments, log_name, detached=True):
     RUNTIME.mkdir(parents=True, exist_ok=True)
     log = RUNTIME / log_name
     if log.exists() and log.stat().st_size > 2 * 1024 * 1024:
         log.replace(log.with_suffix(".log.1"))
-    options = {"creationflags": 0x08000000 | 0x00000008} if os.name == "nt" else {"start_new_session": True}
+    options = {"creationflags": 0x08000000 | (0x00000008 if detached else 0)} if os.name == "nt" else {"start_new_session": True}
     if os.name == "nt":
         startup = subprocess.STARTUPINFO()
         startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
@@ -71,7 +71,7 @@ def backend_ready(base):
         return False
 
 
-def ensure_backend(config):
+def ensure_backend(config, on_start=None):
     base = local_api_url(config.get("JOB_RADAR_API_URL"))
     if backend_ready(base):
         return
@@ -98,8 +98,11 @@ def ensure_backend(config):
         if not ready:
             raise ValueError("Docker não ficou disponível; a tarefa tentará novamente.")
     checked([docker, "compose", "up", "-d", "--wait"], timeout=120)
-    spawn([sys.executable, "-m", "uvicorn", "main:app", "--app-dir", str(ROOT / "backend"),
-           "--host", parsed.hostname, "--port", str(parsed.port or 80)], "backend.log")
+    pid = spawn([sys.executable, "-m", "uvicorn", "main:app", "--app-dir", str(ROOT / "backend"),
+                 "--host", parsed.hostname, "--port", str(parsed.port or 80)], "backend.log",
+                detached=on_start is None)
+    if on_start:
+        on_start(pid)
     for _ in range(30):
         if backend_ready(base):
             return

@@ -167,10 +167,12 @@ def run_once(config, now=None, force=False, input_path=None, notify=True):
             existing = list_existing(client, endpoint)
             pending = state.get("pending_new_jobs", [])
             new_jobs = [item for item in pending if isinstance(item, dict)]
+            matched_jobs = []
             for job in selected:
                 response = client.post(endpoint + "/api/v1/jobs", json=job, headers={"X-API-Key": key})
                 response.raise_for_status()
                 saved = response.json()
+                matched_jobs.append({name: saved[name] for name in ("id", "title", "company", "source_url")})
                 if job["source_url"] not in existing:
                     new_jobs.append({name: saved[name] for name in
                                      ("id", "title", "company", "source_url")})
@@ -179,6 +181,7 @@ def run_once(config, now=None, force=False, input_path=None, notify=True):
                     write_json(state_path, state)
         report = {"status": "partial" if failures else "completed", "slot": slot,
                   "checked_at": now.isoformat(), "selected": len(selected), "new_jobs": new_jobs,
+                  "matched_jobs": matched_jobs,
                   "sources": reports, "failed_sources": failures, "discovery": discovery,
                   "minimum_results": target, "meets_target": len(selected) >= target,
                   "shortfall": max(0, target - len(selected)), "review_count": len(review)}

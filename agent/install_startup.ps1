@@ -1,3 +1,4 @@
+param([switch]$Continuous)
 $ErrorActionPreference = 'Stop'
 $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $pythonPath = Join-Path $projectRoot '.venv\Scripts\pythonw.exe'
@@ -31,4 +32,8 @@ $xml = @"
 "@
 $taskPath = Join-Path $runtimePath 'startup-task.xml'
 $xml | Set-Content -LiteralPath $taskPath -Encoding Unicode
-Register-ScheduledTask -TaskName $taskName -Xml $xml -Force | Select-Object TaskName, State
+Register-ScheduledTask -TaskName $taskName -Xml $xml -Force | Out-Null
+if (-not $Continuous) {
+    Disable-ScheduledTask -TaskName $taskName | Out-Null
+}
+Get-ScheduledTask -TaskName $taskName | Select-Object TaskName, State
