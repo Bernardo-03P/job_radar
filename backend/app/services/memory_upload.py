@@ -12,8 +12,36 @@ from starlette.responses import JSONResponse
 from app.core.config import settings
 from app.services.pdf_parser import MAX_SIZE
 from app.services.resume_store import owner_hash
+from app.services.resume_vault import is_admin
 
 MAX_BODY = MAX_SIZE + 128 * 1024
+
+
+async def bounded_json(scope, receive):
+    headers = Headers(scope=scope)
+    if headers.get("content-type", "").split(";", 1)[0].strip().lower() != "application/json":
+        raise HTTPException(415, "Envie a seleção em JSON.")
+    lengths = headers.getlist("content-length")
+    if len(lengths) > 1 or (lengths and (not lengths[0].isascii() or not lengths[0].isdigit())):
+        raise HTTPException(400, "Tamanho da seleção inválido.")
+    expected = int(lengths[0]) if lengths else None
+    if expected is not None and expected > 4096:
+        raise HTTPException(413, "Seleção excede o limite permitido.")
+    body = bytearray()
+    async with asyncio.timeout(settings.upload_timeout_seconds):
+        while True:
+            message = await receive()
+            if message["type"] == "http.disconnect":
+                raise HTTPException(400, "Seleção interrompida.")
+            chunk = message.get("body", b"")
+            if len(body) + len(chunk) > 4096:
+                raise HTTPException(413, "Seleção excede o limite permitido.")
+            body.extend(chunk)
+            if not message.get("more_body", False):
+                break
+    if expected is not None and len(body) != expected:
+        raise HTTPException(400, "Seleção incompleta.")
+    return bytes(body)
 
 
 class MemoryFormParser:
@@ -137,10 +165,16 @@ class MemoryUploadMiddleware:
 
     async def __call__(self, scope, receive, send):
         if (scope["type"] != "http" or scope.get("method") != "POST"
-                or scope["path"].rstrip("/") != "/api/v1/resumes/tailor"):
+                or scope["path"].rstrip("/") not in
+                {"/api/v1/resumes/tailor", "/api/v1/resumes/sources", "/api/v1/resumes/tailor-saved"}):
             return await self.app(scope, receive, send)
+        saved = scope["path"].rstrip("/") == "/api/v1/resumes/tailor-saved"
         try:
-            owner_hash(Headers(scope=scope).get("x-resume-token"))
+            if saved:
+                if not is_admin(Headers(scope=scope).get("x-api-key")):
+                    raise HTTPException(401, "A geração pelo bot exige acesso privado.")
+            else:
+                owner_hash(Headers(scope=scope).get("x-resume-token"))
         except HTTPException as error:
             return await JSONResponse({"detail": error.detail}, error.status_code)(scope, receive, send)
         with self.lock:
@@ -150,19 +184,35 @@ class MemoryUploadMiddleware:
         if not admitted:
             return await JSONResponse({"detail": "Há muitos uploads em processamento. Tente novamente."},
                                       429, headers={"Retry-After": "5"})(scope, receive, send)
-        form_parser = MemoryFormParser()
+        form_parser = None if saved else MemoryFormParser()
         try:
             try:
-                form = await form_parser.parse(scope, receive)
+                if saved:
+                    body = await bounded_json(scope, receive)
+                else:
+                    form = await form_parser.parse(scope, receive)
             except HTTPException as error:
                 return await JSONResponse({"detail": error.detail}, error.status_code)(scope, receive, send)
             except TimeoutError:
                 return await JSONResponse({"detail": "Tempo limite para receber o upload."}, 408)(scope, receive, send)
             except (ValueError, UnicodeError):
                 return await JSONResponse({"detail": "Formulário multipart inválido."}, 400)(scope, receive, send)
-            scope["state"] = {**scope.get("state", {}), "memory_form": form}
-            await self.app(scope, receive, send)
+            if saved:
+                consumed = False
+
+                async def replay():
+                    nonlocal consumed
+                    if not consumed:
+                        consumed = True
+                        return {"type": "http.request", "body": body, "more_body": False}
+                    return await receive()
+
+                await self.app(scope, replay, send)
+            else:
+                scope["state"] = {**scope.get("state", {}), "memory_form": form}
+                await self.app(scope, receive, send)
         finally:
-            form_parser.close()
+            if form_parser is not None:
+                form_parser.close()
             with self.lock:
                 self.active -= 1

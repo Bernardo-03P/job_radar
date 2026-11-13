@@ -1,4 +1,5 @@
 from hashlib import sha256
+from io import BytesIO
 from typing import Annotated
 from uuid import UUID
 
@@ -10,8 +11,13 @@ from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
 from app.db.session import get_db
-from app.schemas.resume import SavedResumeRead, TailorResponse, TailorResponseData
-from app.services import resume_store
+from app.schemas.resume import (
+    SavedResumeRead,
+    SavedSourceTailorRequest,
+    TailorResponse,
+    TailorResponseData,
+)
+from app.services import resume_store, resume_vault
 from app.services.generation_lock import database_generation_lease, generation_lock
 from app.services.llm_client import LLMService
 from app.services.pdf_parser import PDFParserService
@@ -30,6 +36,53 @@ class MemoryFormRoute(APIRoute):
 
 
 router = APIRouter(route_class=MemoryFormRoute)
+
+
+@router.post("/sources", status_code=201)
+async def store_original(resume_file: Annotated[UploadFile, File()],
+                         x_resume_token: Annotated[str | None, Header()] = None):
+    try:
+        resume_store.owner_hash(x_resume_token)
+        if not (resume_file.filename or "").lower().endswith(".pdf"):
+            raise HTTPException(400, "Apenas formato PDF é suportado.")
+        await PDFParserService.extract_text_from_pdf(resume_file)
+        await resume_file.seek(0)
+        pdf = await resume_file.read(5 * 1024 * 1024 + 1)
+        return await run_in_threadpool(resume_vault.save_source, pdf, resume_file.filename, x_resume_token)
+    finally:
+        await resume_file.close()
+
+
+@router.get("/sources")
+def sources(x_resume_token: Annotated[str | None, Header()] = None,
+            x_api_key: Annotated[str | None, Header()] = None):
+    return resume_vault.list_sources(x_resume_token, x_api_key)
+
+
+@router.delete("/sources/{source_id}", status_code=204)
+def remove_original(source_id: UUID, x_resume_token: Annotated[str | None, Header()] = None,
+                    x_api_key: Annotated[str | None, Header()] = None):
+    resume_vault.delete_source(str(source_id), x_resume_token, x_api_key)
+
+
+@router.post("/tailor-saved", response_model=TailorResponse)
+async def tailor_saved(payload: SavedSourceTailorRequest,
+                       db: Annotated[Session, Depends(get_db)],
+                       llm: Annotated[LLMService, Depends()],
+                       x_api_key: Annotated[str | None, Header()] = None):
+    import base64
+
+    from app.models.job import Job
+    if not resume_vault.is_admin(x_api_key):
+        raise HTTPException(401, "A geração pelo bot exige acesso privado.")
+    record = await run_in_threadpool(resume_vault.read_source, str(payload.source_id), None, x_api_key)
+    job = await run_in_threadpool(db.get, Job, payload.job_id)
+    if job is None:
+        raise HTTPException(404, "Vaga não encontrada.")
+    if len(job.description) > 30000:
+        raise HTTPException(422, "Descrição excede o limite para adaptação.")
+    upload = UploadFile(BytesIO(base64.b64decode(record["pdf"])), filename="original.pdf")
+    return await tailor_resume(upload, job.description, llm, db, job.id, record["token"])
 
 
 @router.post("/tailor", response_model=TailorResponse)
@@ -70,9 +123,7 @@ async def tailor_resume(resume_file: Annotated[UploadFile, File()],
                     await run_in_threadpool(db.rollback)
                     return response
                 await run_in_threadpool(db.rollback)
-                prompt = ResumeTailorService.build_tailoring_prompt(raw, job_description)
-                result = await llm.generate_json(prompt)
-                data = ResumeTailorService.validate_and_render(result, raw, job_description)
+                data = await ResumeTailorService.generate_validated(llm, raw, job_description)
                 saved = await run_in_threadpool(resume_store.save_version, db, owner, fingerprint,
                                                context, job_id, job_description, title, company, data)
                 return TailorResponse(data=data, version=SavedResumeRead.model_validate(saved))

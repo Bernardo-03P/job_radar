@@ -10,8 +10,10 @@ import httpx
 from dotenv import dotenv_values, load_dotenv
 
 if __package__:
+    from .job_profile import load_profile, profile_match
     from .local_api import local_api_url
 else:
+    from job_profile import load_profile, profile_match
     from local_api import local_api_url
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -59,7 +61,7 @@ def register_hermes(config):
     subprocess.run([
         executable, "cron", "create", config["schedule"], config["prompt"],
         "--name", config["name"], "--timezone", config["timezone"], "--workdir", str(ROOT),
-        "--deliver", "local", "--catch-up", "off",
+        "--deliver", "local", "--catch-up", "on",
     ], check=True, shell=False, timeout=30)
 
 
@@ -85,6 +87,15 @@ def main():
     jobs = DEMO_JOBS if args.demo else json.loads(source.read_text(encoding="utf-8"))
     if not isinstance(jobs, list):
         parser.error("O arquivo precisa conter uma lista de vagas.")
+    if not args.demo:
+        profile = load_profile()
+        for job in jobs:
+            try:
+                matched, reason = profile_match(job, profile)
+            except (KeyError, TypeError, AttributeError):
+                parser.error("Registro inválido; nenhuma vaga foi importada.")
+            if not matched:
+                parser.error(f"Lote fora do perfil ({reason}); nenhuma vaga foi importada.")
     endpoint = local_api_url(os.getenv("JOB_RADAR_API_URL"))
     with httpx.Client(timeout=30, follow_redirects=False, trust_env=False) as client:
         for job in jobs:

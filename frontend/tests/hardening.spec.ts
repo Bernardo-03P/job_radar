@@ -11,13 +11,13 @@ function version(index: number) {
     source_fingerprint: "a".repeat(64), created_at: "2026-11-12T12:00:00Z", data };
 }
 test.beforeEach(async ({ page }) => {
-  await page.route("**/api/v1/jobs", route => route.fulfill({ json: [job] }));
+  await page.route("**/api/v1/jobs?matching_profile=true", route => route.fulfill({ json: [job] }));
 });
 
 test("resposta inválida de vagas apresenta erro sem quebrar a página", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
-  await page.route("**/api/v1/jobs", route => route.fulfill({ json: [{ id: 1, skills: null }] }));
+  await page.route("**/api/v1/jobs?matching_profile=true", route => route.fulfill({ json: [{ id: 1, skills: null }] }));
   await page.route("**/api/v1/resumes/versions", route => route.fulfill({ json: [] }));
   await page.goto("/");
   await expect(page.getByRole("alert").filter({ hasText: "Não foi possível carregar as vagas" })).toBeVisible();

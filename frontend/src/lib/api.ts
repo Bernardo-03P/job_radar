@@ -2,6 +2,7 @@ export type Job = { id: number; title: string; company: string; location: string
 export type Result = { match_score: number; summary_of_changes: string[]; missing_critical_skills: string[]; adapted_resume_markdown: string };
 export type SavedVersion = { id: string; job_id: number | null; job_title: string; company: string;
   job_description: string; source_fingerprint: string; created_at: string; data: Result };
+export type SavedSource = { id: string; filename: string; fingerprint: string; created_at: string };
 
 function object(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -36,6 +37,16 @@ export function versionsResponse(value: unknown): SavedVersion[] {
   }
   return value;
 }
+export function sourcesResponse(value: unknown): SavedSource[] {
+  if (!Array.isArray(value) || !value.every(item => object(item)
+    && typeof item.id === "string" && /^[0-9a-f-]{36}$/i.test(item.id)
+    && typeof item.filename === "string" && typeof item.fingerprint === "string"
+    && /^[0-9a-f]{64}$/.test(item.fingerprint) && typeof item.created_at === "string"
+    && Number.isFinite(Date.parse(item.created_at)))) {
+    throw new Error("O servidor retornou dados inválidos do PDF guardado.");
+  }
+  return value as SavedSource[];
+}
 export function tailorResponse(value: unknown): { data: Result; version?: SavedVersion | null } {
   if (!object(value) || value.status !== "success" || !result(value.data)
     || (value.version != null && !version(value.version))) {
@@ -46,7 +57,7 @@ export function tailorResponse(value: unknown): { data: Result; version?: SavedV
 
 export async function requestJson(url: string, init?: RequestInit): Promise<unknown> {
   let response: Response;
-  const timeout = AbortSignal.timeout(90000);
+  const timeout = AbortSignal.timeout(150000);
   const signal = init?.signal ? AbortSignal.any([init.signal, timeout]) : timeout;
   try { response = await fetch(url, { ...init, signal }); }
   catch (error) {
@@ -57,6 +68,7 @@ export async function requestJson(url: string, init?: RequestInit): Promise<unkn
     throw new Error("Não foi possível conectar ao backend. Confira se o serviço está ligado.");
   }
   let body: unknown;
+  if (response.status === 204) return null;
   try { body = await response.json(); }
   catch (error) {
     if (error instanceof Error && error.name === "AbortError") throw error;

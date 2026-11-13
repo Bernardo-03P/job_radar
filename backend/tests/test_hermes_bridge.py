@@ -77,3 +77,33 @@ def test_telegram_failure_never_exposes_bot_token(mocker, monkeypatch):
         hermes_bridge.send_document(CONFIG, {"id": "test", "job_title": "Teste",
                                              "data": {"adapted_resume_markdown": "Texto sintético"}})
     assert "private-secret" not in str(error.value)
+
+
+def test_manual_search_requires_private_telegram_context(mocker):
+    execute = mocker.patch.object(hermes_bridge.subprocess, "run")
+    with pytest.raises(PermissionError):
+        hermes_bridge.search_now(CONFIG)
+    execute.assert_not_called()
+
+
+def test_manual_search_forces_refresh_without_duplicate_notification(mocker, monkeypatch):
+    for key, value in PRIVATE.items():
+        monkeypatch.setenv(key, value)
+    execute = mocker.patch.object(hermes_bridge.subprocess, "run", return_value=SimpleNamespace(
+        returncode=0, stdout='{"status":"completed","selected":2,"new_jobs":[]}'))
+    result = hermes_bridge.search_now(CONFIG, include_discovery=True)
+    arguments = execute.call_args.args[0]
+    assert "--run-now" in arguments and "--no-notify" in arguments
+    assert arguments[-1].endswith("telegram-candidates.json")
+    assert execute.call_args.kwargs["cwd"] == hermes_bridge.ROOT
+    assert result["reply_in_current_chat"] and not result["automatic_notification"]
+
+
+def test_manual_search_error_omits_subprocess_output(mocker, monkeypatch):
+    for key, value in PRIVATE.items():
+        monkeypatch.setenv(key, value)
+    mocker.patch.object(hermes_bridge.subprocess, "run", return_value=SimpleNamespace(
+        returncode=1, stdout="private-subprocess-detail"))
+    with pytest.raises(ValueError) as error:
+        hermes_bridge.search_now(CONFIG)
+    assert "private-subprocess-detail" not in str(error.value)

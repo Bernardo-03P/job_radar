@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test("busca e seleção com backend real, sem mock de vagas", async ({ page, request }) => {
   test.skip(!process.env.E2E_REAL_API, "Integração opcional com o backend local iniciado.");
-  const response = await request.get("http://127.0.0.1:8000/api/v1/jobs");
+  const response = await request.get("http://127.0.0.1:8000/api/v1/jobs?matching_profile=true");
   expect(response.ok()).toBeTruthy();
   const jobs = await response.json();
   expect(jobs.length).toBeGreaterThan(0);

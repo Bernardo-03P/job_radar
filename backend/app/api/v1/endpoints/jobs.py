@@ -1,6 +1,7 @@
 import secrets
 from typing import Annotated
 
+from agent.job_profile import load_profile, profile_match, stage
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
@@ -16,12 +17,20 @@ router = APIRouter()
 
 @router.get("", response_model=list[JobRead])
 def list_jobs(db: Annotated[Session, Depends(get_db)], q: str = "",
-              limit: int = Query(50, ge=1, le=100), offset: int = Query(0, ge=0)):
+              limit: int = Query(50, ge=1, le=100), offset: int = Query(0, ge=0),
+              matching_profile: bool = False):
     statement = select(Job).order_by(Job.created_at.desc(), Job.id.desc())
     if q:
         query = q[:200]
         statement = statement.where(or_(Job.title.icontains(query, autoescape=True),
                                         Job.company.icontains(query, autoescape=True)))
+    if matching_profile:
+        profile = load_profile()
+        matches = [job for job in db.scalars(statement)
+                   if profile_match({"title": job.title, "description": job.description,
+                                     "location": job.location}, profile)[0]]
+        matches.sort(key=lambda job: stage({"title": job.title}) != "internship")
+        return matches[offset:offset + limit]
     return db.scalars(statement.offset(offset).limit(limit)).all()
 
 

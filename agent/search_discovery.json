@@ -1,0 +1,35 @@
+{
+  "purpose": "Descoberta complementar pelo Hermes ou pesquisa humana; não é um scraper ou agendamento ativo.",
+  "minimum_results": 10,
+  "max_search_queries": 20,
+  "channels": [
+    {"name": "LinkedIn", "domains": ["br.linkedin.com", "www.linkedin.com"]},
+    {"name": "Indeed", "domains": ["br.indeed.com"]},
+    {"name": "InfoJobs", "domains": ["www.infojobs.com.br", "www2.infojobs.com.br"]},
+    {"name": "IEL Santa Catarina", "domains": ["carreiras.iel.org.br"]},
+    {"name": "CIEE Santa Catarina", "domains": ["cieesc.org.br"]},
+    {"name": "Super Estágios", "domains": ["www.superestagios.com.br"]},
+    {"name": "Carreiras das empresas", "domains": []}
+  ],
+  "internship_queries": [
+    "estágio ciência de dados inteligência artificial Florianópolis",
+    "estágio dados inteligência artificial remoto Brasil",
+    "estágio análise desenvolvimento sistemas Florianópolis",
+    "estágio desenvolvimento software remoto Brasil",
+    "estágio suporte N1 Florianópolis",
+    "estágio suporte técnico remoto Brasil"
+  ],
+  "trainee_queries": ["trainee dados desenvolvimento suporte Florianópolis remoto Brasil"],
+  "rules": [
+    "Aplicar agent/search_profile.json; dedicar aproximadamente 90% da busca a estágio.",
+    "Buscar pelo menos dez anúncios distintos compatíveis e abertos; ampliar termos e fontes até a meta ou o limite de vinte consultas. Não é garantia de quantidade disponível.",
+    "Não completar a meta com duplicatas, vagas encerradas, cadastro de talentos sem oportunidade atual ou vagas fora do perfil. Informar quantidade validada, faltante e pendências.",
+    "Priorizar publicações recentes quando a fonte informar data; não apresentar data de coleta como data de publicação e marcar data desconhecida quando necessário.",
+    "Conferir candidatura aberta na página original. Anúncio indexado não confirma vaga aberta.",
+    "Não contornar login, captcha ou bloqueio, nem usar credenciais de conta pessoal.",
+    "Resolver duplicatas pela URL original e conferir cargo, curso, localização e modalidade.",
+    "Separar vagas com endereço, elegibilidade ou requisitos incertos para revisão.",
+    "Não avaliar empresa como bom empregador apenas por aparecer na busca.",
+    "Nunca candidatar, enviar currículo ou mensagem sem solicitação explícita."
+  ]
+}

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { BriefcaseBusiness, Check, ChevronRight, Copy, Download, FileText, LoaderCircle, Radar, Search, ShieldCheck, Sparkles, Upload, X } from "lucide-react";
 import Markdown from "react-markdown";
 import Link from "next/link";
+import ResumeSourceControls from "./resume-source-controls";
 import { jobsResponse, requestJson, tailorResponse, versionsResponse, type Job, type Result, type SavedVersion } from "@/lib/api";
 
 type CachedVersion = { data: Result; savedId?: string };
@@ -79,7 +80,7 @@ export default function Home() {
         setHistoryError("Permita o armazenamento local deste site para acessar seu histórico privado.");
       }
     });
-    requestJson(`${API}/api/v1/jobs`, { signal: abort.signal }).then(body => {
+    requestJson(`${API}/api/v1/jobs?matching_profile=true`, { signal: abort.signal }).then(body => {
       if (!abort.signal.aborted) setJobs(jobsResponse(body));
     }).catch(err => { if (err.name !== "AbortError") setJobsError("Não foi possível carregar as vagas. Verifique o backend e o banco de dados."); })
       .finally(() => setJobsLoading(false));
@@ -225,15 +226,16 @@ export default function Home() {
       <span className="flex items-center gap-2 text-xs text-zinc-400"><span className="h-1.5 w-1.5 rounded-full bg-lime-300"/>Ambiente local</span>
     </div></header>
     <main className="mx-auto max-w-[1440px] px-6 py-10 lg:px-10">
-      <div className="mb-9 flex flex-wrap items-end justify-between gap-6"><div><p className="mb-3 text-xs font-medium uppercase tracking-[.2em] text-lime-300">Seu próximo passo em tech</p><h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Oportunidades certas.<br/><span className="text-zinc-500">Seu currículo, em sintonia.</span></h1><p className="mt-4 max-w-xl text-sm leading-6 text-zinc-400">Encontre uma vaga, adicione seu currículo e destaque o que você já sabe fazer.</p></div><div className="flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-xs text-zinc-400"><ShieldCheck size={15} className="text-lime-300"/>PDF processado apenas em memória</div></div>
+      <div className="mb-9 flex flex-wrap items-end justify-between gap-6"><div><p className="mb-3 text-xs font-medium uppercase tracking-[.2em] text-lime-300">Seu próximo passo em tech</p><h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Oportunidades certas.<br/><span className="text-zinc-500">Seu currículo, em sintonia.</span></h1><p className="mt-4 max-w-xl text-sm leading-6 text-zinc-400">Encontre uma vaga, adicione seu currículo e destaque o que você já sabe fazer.</p></div><div className="flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-xs text-zinc-400"><ShieldCheck size={15} className="text-lime-300"/>PDF temporário por padrão</div></div>
       <section className="mb-8 grid gap-5 rounded-2xl border border-white/10 bg-zinc-900/40 p-5 sm:grid-cols-[1fr_auto] sm:items-center">
         <div onDragOver={e => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={e => { e.preventDefault(); setDragging(false); acceptFile(e.dataTransfer.files[0]); }} className={`flex items-center gap-4 rounded-xl border border-dashed p-4 ${dragging ? "border-lime-300 bg-lime-300/10" : "border-zinc-700"}`}>
-          <Upload className="shrink-0 text-lime-300" size={23}/><div className="min-w-0 flex-1"><button type="button" onClick={() => input.current?.click()} className="max-w-full truncate text-left text-sm font-medium hover:text-lime-300">{file ? file.name : "Arraste seu currículo ou clique para selecionar"}</button><p className="mt-1 text-xs text-zinc-500">PDF com texto selecionável · até 5 MB · não armazenado</p></div>
+          <Upload className="shrink-0 text-lime-300" size={23}/><div className="min-w-0 flex-1"><button type="button" onClick={() => input.current?.click()} className="max-w-full truncate text-left text-sm font-medium hover:text-lime-300">{file ? file.name : "Arraste seu currículo ou clique para selecionar"}</button><p className="mt-1 text-xs text-zinc-500">PDF com texto selecionável · até 5 MB · só guardado se você escolher</p></div>
           {file && <button aria-label="Remover currículo" onClick={() => { resetView(); fileRead.current += 1; fingerprintRef.current = null; setReadingFile(false); setVersions({}); setFile(null); if (input.current) input.current.value = ""; }}><X size={18}/></button>}
           <input ref={input} type="file" accept="application/pdf,.pdf" className="hidden" aria-label="Selecionar currículo PDF" onChange={e => acceptFile(e.target.files?.[0])}/>
         </div>
         <div className="max-w-xs text-xs leading-6 text-zinc-500"><span className="block font-medium text-zinc-300">Sua experiência é a fonte.</span>Ao adaptar, o texto é enviado ao provedor de IA configurado.</div>
       </section>
+      <ResumeSourceControls file={file} token={resumeToken}/>
       <div className="grid items-start gap-6 lg:grid-cols-[.9fr_1.3fr]">
         <section className="rounded-2xl border border-white/10 bg-zinc-900/30"><div className="border-b border-white/10 p-5"><div className="mb-4 flex items-center justify-between"><h2 className="flex items-center gap-2 text-sm font-semibold"><BriefcaseBusiness size={17} className="text-zinc-400"/>Radar de vagas</h2><span className="text-xs text-zinc-500">{jobs.length} oportunidades</span></div><label className="flex items-center gap-2 rounded-lg border border-white/10 bg-zinc-950 px-3 py-2.5"><Search size={16} className="text-zinc-500"/><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Cargo, empresa ou tecnologia" aria-label="Buscar vagas" className="w-full bg-transparent text-sm outline-none placeholder:text-zinc-600"/></label></div>
           <div className="max-h-[420px] overflow-y-auto p-3">
@@ -285,7 +287,7 @@ export default function Home() {
       </div>
       <section aria-label="Histórico de currículos" className="mt-6 rounded-2xl border border-white/10 bg-zinc-900/30 p-5">
         <div className="mb-3 flex items-center justify-between gap-3"><h2 className="text-sm font-semibold">Versões salvas por vaga</h2><span className="text-xs text-zinc-500">{savedVersions.length} versões</span></div>
-        <p className="mb-4 text-xs leading-5 text-zinc-500">O texto adaptado fica no banco local e pode ser consultado pelo seu bot privado do Hermes. O PDF original não é armazenado. Este navegador mantém apenas a identificação privada do seu histórico.</p>
+        <p className="mb-4 text-xs leading-5 text-zinc-500">O texto adaptado fica no banco local e pode ser consultado pelo seu bot privado do Hermes. O PDF original só é guardado neste PC quando você escolhe a opção para o Telegram. Este navegador mantém apenas a identificação privada do seu histórico.</p>
         {historyError && <p role="alert" className="mb-4 text-xs text-amber-200">{historyError}</p>}
         {savedVersions.length === 0 ? <p className="text-sm text-zinc-500">As versões aparecerão aqui após a primeira adaptação.</p>
           : <ul className="grid gap-3 sm:grid-cols-2">{savedVersions.map(record => <li key={record.id} className="rounded-xl border border-white/10 p-4">

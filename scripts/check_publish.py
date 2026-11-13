@@ -1,4 +1,5 @@
 """Bloqueia segredos e documentos pessoais no índice Git, sem imprimir valores."""
+import argparse
 import re
 import shutil
 import subprocess
@@ -8,10 +9,16 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--worktree", action="store_true", help="Inclui arquivos novos não ignorados na revisão local")
+    args = parser.parse_args()
     git = shutil.which("git")
     if not git:
         raise SystemExit("Git não encontrado.")
-    names = subprocess.check_output([git, "ls-files", "-z"], cwd=ROOT).decode().split("\0")
+    command = [git, "ls-files", "-z"]
+    if args.worktree:
+        command.extend(["--cached", "--others", "--exclude-standard"])
+    names = sorted(set(subprocess.check_output(command, cwd=ROOT).decode().split("\0")))
     secrets = []
     local_env = ROOT / ".env"
     if local_env.exists():
@@ -25,10 +32,16 @@ def main():
         path = Path(name)
         if ((path.name.startswith(".env") and path.name != ".env.example")
                 or path.suffix.lower() in {".pdf", ".docx", ".db", ".sqlite", ".sqlite3", ".dump", ".sql"}
-                or any(part in {".venv", "node_modules", ".next", "audit-artifacts"} for part in path.parts)):
+                or any(part in {".venv", "node_modules", ".next", ".runtime", "audit-artifacts"} for part in path.parts)):
             problems.append(name)
             continue
-        content = subprocess.check_output([git, "show", f":{name}"], cwd=ROOT)
+        if args.worktree:
+            working_path = ROOT / path
+            if not working_path.is_file():
+                continue
+            content = working_path.read_bytes()
+        else:
+            content = subprocess.check_output([git, "show", f":{name}"], cwd=ROOT)
         if pattern.search(content) or any(secret in content for secret in secrets):
             problems.append(name)
     if problems:

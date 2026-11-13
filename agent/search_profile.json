@@ -1,0 +1,10 @@
+{
+  "minimum_results": 10,
+  "internship_share": 0.9,
+  "onsite_city": "Florianópolis",
+  "excluded_locations": ["Palhoça", "São José", "Estreito", "Biguaçu", "Continente", "Coqueiros", "Capoeiras", "Abraão", "Balneário", "Jardim Atlântico", "Canto", "Campinas", "Barreiros"],
+  "allow_remote_brazil": true,
+  "island_locations": ["Saco Grande", "Sapiens Park", "SC-401", "SC 401", "Trindade", "Itacorubi", "Santa Mônica", "Córrego Grande", "Agronômica", "Saco dos Limões", "Campeche", "Ingleses", "Canasvieiras", "João Paulo", "Lagoa da Conceição"],
+  "areas": ["Ciência de Dados", "Inteligência Artificial", "Análise e Desenvolvimento de Sistemas", "Suporte N1", "Suporte N2 iniciante"],
+  "notes": "Priorizar estágio e suporte N1. Trainee e N2 são complementares. Presencial/híbrido somente em Florianópolis, excluindo continente e municípios vizinhos. Localização sem bairro precisa de confirmação."
+}

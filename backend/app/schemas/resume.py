@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Literal
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -29,3 +30,9 @@ class TailorResponse(BaseModel):
     data: TailorResponseData
     version: SavedResumeRead | None = None
     cached: bool = False
+
+
+class SavedSourceTailorRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    source_id: UUID
+    job_id: int = Field(ge=1)

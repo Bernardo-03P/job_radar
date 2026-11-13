@@ -1,0 +1,11 @@
+[
+  {"board": "rdstation", "company": "RD Station"},
+  {"provider": "gupy_board", "board": "starian"},
+  {"provider": "gupy_board", "board": "softplan"},
+  {"provider": "gupy_board", "board": "geopixel"},
+  {"provider": "gupy_board", "board": "leega"},
+  {"provider": "gupy_board", "board": "smarthis"},
+  {"provider": "iel", "url": "https://carreiras.iel.org.br/SC/vaga/estagio/29468/estagio-analise-e-desenvolvimento-de-sistemas"},
+  {"provider": "iel", "url": "https://carreiras.iel.org.br/SC/vaga/estagio/32327/estagio-analise-e-desenvolvimento-de-sistemas-sistemas-de-informacao-rede-de-computadores"},
+  {"provider": "iel", "url": "https://carreiras.iel.org.br/SC/vaga/estagio/31422/estagio-analise-e-desenvolvimento-de-sistemas-tecnologia-da-informacao"}
+]
