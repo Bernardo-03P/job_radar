@@ -44,6 +44,19 @@ currículo ou candidatura foi enviado.
 
 ## Estado final do produto
 
+### Rodada de 16/11/2026 e correção da contagem
+
+Hermes executou ao ficar disponível com o PC no fim da tarde, conforme confirmado
+pelo proprietário. O lote inicialmente contado como oito tinha Starian em dois
+formatos de URL e CERTI sem bairro confirmado para a vaga. A correção unifica a
+identidade Gupy e deixa CERTI em revisão, preservando o histórico.
+
+Revalidação dos filtros às 18h07: **seis oportunidades distintas**, quatro
+faltantes para a meta. IDs selecionados: Starian 13, Blip 14, EVOLUA/IEL 15,
+Geopixel 16, iFood 19 e Stefanini 20. Esta repetição não teve vagas novas nem
+aviso adicional. A descoberta complementar veio da rodada Hermes de hoje;
+não representa nova checagem de todas as páginas originais pelo Codex.
+
 ### Ampliação automática às 17h36 de 13/11/2026
 
 Nove fontes responderam sem falhas. Quatro vagas compatíveis foram validadas,

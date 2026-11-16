@@ -61,6 +61,10 @@ def profile_match(job, profile):
         if re.search(r"(?<!\w)" + re.escape(folded(excluded)) + r"(?!\w)", address):
             return False, "local_excluido"
     if folded(profile["onsite_city"]) in location:
+        if re.search(r"anuncio nao (?:informa|especifica) (?:o )?bairro|"
+                     r"bairro.{0,30}(?:a confirmar|nao (?:informado|especificado))|"
+                     r"confirmar (?:o )?endereco(?: exato)?", location + " " + text):
+            return False, "florianopolis_bairro_a_confirmar"
         if "grande florianopolis" in location or "regiao" in location:
             return False, "regiao_sem_endereco_confirmado"
         for neighborhood in profile.get("island_locations", []):

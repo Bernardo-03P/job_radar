@@ -85,14 +85,16 @@ def discovery_jobs(path, now, profile):
     values = payload["jobs"]
     if not isinstance(values, list) or len(values) > 200:
         raise ValueError("Lista de descoberta inválida.")
-    jobs, rejected = [], 0
+    jobs, rejected, review = [], 0, []
     for item in values:
         job = JobCreate.model_validate(item).model_dump(mode="json")
-        if profile_match(job, profile)[0]:
+        matched, reason = profile_match(job, profile)
+        if matched:
             jobs.append(job)
         else:
             rejected += 1
-    return jobs, {"status": "supplied", "selected": len(jobs), "filtered": rejected}
+            review.append({"reason": reason, "job": job})
+    return jobs, {"status": "supplied", "selected": len(jobs), "filtered": rejected, "review": review}
 
 
 def list_existing(client, endpoint):
@@ -154,6 +156,7 @@ def run_once(config, now=None, force=False, input_path=None, notify=True):
                 except (httpx.HTTPError, ValueError, KeyError, TypeError):
                     failures.append(source.get("board") or source.get("provider", "unknown"))
             discovered, discovery = discovery_jobs(input_path, now, profile)
+            review.extend(discovery.pop("review", []))
             jobs.extend(discovered)
             if not reports and not discovered:
                 raise ValueError("Nenhuma fonte respondeu; a rodada não foi marcada como concluída.")

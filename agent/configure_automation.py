@@ -28,6 +28,8 @@ vagas fora do perfil. Priorize recentes com data comprovada; coleta não é publ
 Verifique que cada anúncio continua recebendo candidaturas na fonte original.
 Anúncios indexados não bastam; 'Applications closed' significa vaga encerrada.
 Florianópolis presencial/híbrido exige bairro na ilha; exclua continente e arredores.
+O endereço institucional da sede não prova o local desta vaga. Se o anúncio não
+informar bairro/endereço exato, mantenha para revisão; não preencha com a sede.
 Remoto deve aceitar residentes de Florianópolis/Brasil, sem reuniões obrigatórias fora.
 Requisitos de curso ou localização incertos devem ser relatados como pendência, nunca inventados.
 Salve .runtime/hermes-candidates.json como objeto JSON com checked_at (horário ISO 8601

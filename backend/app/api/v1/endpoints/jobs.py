@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.db.session import get_db
 from app.models.job import Job
-from app.schemas.job import JobCreate, JobRead
+from app.schemas.job import JobCreate, JobRead, canonical_source_url
 
 router = APIRouter()
 
@@ -26,9 +26,15 @@ def list_jobs(db: Annotated[Session, Depends(get_db)], q: str = "",
                                         Job.company.icontains(query, autoescape=True)))
     if matching_profile:
         profile = load_profile()
-        matches = [job for job in db.scalars(statement)
-                   if profile_match({"title": job.title, "description": job.description,
-                                     "location": job.location}, profile)[0]]
+        unique = {}
+        for job in db.scalars(statement):
+            if not profile_match({"title": job.title, "description": job.description,
+                                  "location": job.location}, profile)[0]:
+                continue
+            key = canonical_source_url(job.source_url)
+            if key not in unique or job.id < unique[key].id:
+                unique[key] = job
+        matches = sorted(unique.values(), key=lambda job: (job.created_at, job.id), reverse=True)
         matches.sort(key=lambda job: stage({"title": job.title}) != "internship")
         return matches[offset:offset + limit]
     return db.scalars(statement.offset(offset).limit(limit)).all()

@@ -6,6 +6,27 @@ Os registros anteriores preservam o estado histórico de cada etapa; veja a evid
 
 ## Auditoria final local
 
+### Recuperação e revisão da rodada de 16/11/2026
+
+- Usuário confirmou que ligou o PC no fim da tarde. Hermes iniciou a execução
+  às 17h34; ingestão às 17h40 e sessão fechada às 17h41 sem erros de encerramento.
+  Trata-se da recuperação após a disponibilidade do PC, não evidência de falha às 9h.
+- Relatório inicial: oito registros, incluindo uma duplicata Starian por link
+  compartilhável Gupy e CERTI com bairro presumido a partir da sede institucional.
+- Links Gupy `/job/<base64>` válidos agora resolvem a identidade `/jobs/<id>`.
+  Recomendações ocultam duplicatas antigas antes da paginação, preservando os
+  registros e referências de currículos no histórico. Payloads inválidos e domínios
+  de terceiros não são unificados.
+- Perfil recusa bairro/endereço explicitamente pendente mesmo quando a descrição
+  insere um bairro presumido. CERTI voltou para revisão: anúncio não confirma bairro
+  e exige cursos/fase específicos. O prompt do cron e a skill reforçam essa regra.
+- Revalidação local do lote de descoberta do dia às 18h07: seis vagas distintas,
+  nenhuma nova nessa repetição, quatro faltantes para a meta e duas em revisão.
+  As novidades válidas trazidas pela rodada anterior foram iFood e Stefanini.
+  Não houve novo aviso Telegram ou geração de currículo.
+- 69 testes direcionados passaram. Sessão real fechou em cerca de 30 segundos,
+  `cleanup_errors=[]`; portas 3000/8000/55432 e container confirmados parados.
+
 ### Operação temporária por busca — atualização posterior em 13/11/2026
 
 - Preferência atual: manter Hermes ativo; ligar API/banco somente durante buscas
