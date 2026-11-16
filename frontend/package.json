@@ -11,7 +11,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "capture:demo": "node scripts/capture-demo.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.72.0",

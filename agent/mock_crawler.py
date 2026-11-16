@@ -4,6 +4,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import httpx
@@ -13,21 +14,22 @@ if __package__:
     from .job_profile import load_profile, profile_match
     from .local_api import local_api_url
 else:
-    from job_profile import load_profile, profile_match
-    from local_api import local_api_url
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from agent.job_profile import load_profile, profile_match
+    from agent.local_api import local_api_url
 
 ROOT = Path(__file__).resolve().parents[1]
 DEMO_JOBS = [
-    {"title": "Backend Python · demonstração", "company": "Empresa Exemplo (fictícia)",
+    {"title": "Estágio em Backend Python · demonstração", "company": "Empresa Exemplo (fictícia)",
      "location": "Remoto · Brasil", "description": (
          "Vaga fictícia para demonstração. Desenvolvimento de APIs com Python e FastAPI, "
-         "persistência em PostgreSQL, testes com pytest e serviços com Docker."
+         "persistência em PostgreSQL, testes com pytest e serviços com Docker. Horário: das 13h às 19h."
      ), "source_url": "https://example.com/demo/backend-python",
      "skills": ["Python", "FastAPI", "PostgreSQL", "Docker"]},
-    {"title": "Engenharia de Dados · demonstração", "company": "Laboratório Exemplo (fictício)",
-     "location": "Remoto", "description": (
+    {"title": "Estágio em Engenharia de Dados · demonstração", "company": "Laboratório Exemplo (fictício)",
+     "location": "Remoto · Brasil", "description": (
          "Vaga fictícia para demonstração. Construção de pipelines em Python e SQL, "
-         "modelagem de dados, automação de testes e uso de PostgreSQL."
+         "modelagem de dados, automação de testes e uso de PostgreSQL. Horário não informado."
      ), "source_url": "https://example.com/demo/data-engineer",
      "skills": ["Python", "SQL", "PostgreSQL"]},
 ]
