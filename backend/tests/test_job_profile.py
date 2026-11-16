@@ -11,7 +11,7 @@ from main import app
 
 
 def job(title="Estágio em Ciência de Dados", location="Remoto, Brasil", description="Python e SQL"):
-    return {"title": title, "location": location, "description": description}
+    return {"title": title, "location": location, "description": description + " Horário: das 13h às 19h."}
 
 
 @pytest.mark.parametrize("title", ["Estagiário em IA", "Estágio em Desenvolvimento de Sistemas",
@@ -105,7 +105,7 @@ async def test_api_profile_filters_before_pagination_without_deleting_history(mo
         for index, row in enumerate(dataset):
             response = await client.post("/api/v1/jobs", headers={"X-API-Key": "test-ingest-key"},
                                          json=row | {"company": "Empresa teste",
-                                                     "description": "Python e SQL para construir sistemas.",
+                                                     "description": "Python e SQL para construir sistemas. Horário: das 13h às 19h.",
                                                      "source_url": f"https://example.com/jobs/{index}"})
             assert response.status_code == 201
         selected = (await client.get("/api/v1/jobs?matching_profile=true&limit=1")).json()

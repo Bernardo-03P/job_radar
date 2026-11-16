@@ -2,6 +2,7 @@ import base64
 import json
 import re
 from datetime import datetime
+from typing import Literal
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
@@ -53,3 +54,4 @@ class JobRead(BaseModel):
     source_url: str
     skills: list[str]
     created_at: datetime
+    schedule_status: Literal['confirmed', 'unconfirmed'] | None = None

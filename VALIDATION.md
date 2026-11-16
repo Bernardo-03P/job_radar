@@ -6,6 +6,54 @@ Os registros anteriores preservam o estado histórico de cada etapa; veja a evid
 
 ## Auditoria final local
 
+### Fechamento de sessão interativa e grupos de horário — 16/11/2026
+
+- Teste real detectou que um worker lançado como filho do helper não persistiu
+  no ambiente Windows; esse teste não foi contado como desligamento bem-sucedido.
+  Instalada a tarefa sob demanda `JobRadar-Interactive-Session`, sem gatilhos,
+  com execução oculta sob o mesmo usuário e sem privilégio elevado.
+- Repetição real: helper iniciou site/API/banco, consultou o PDF salvo e retornou;
+  tarefa permaneceu Running. Após cinco minutos sem comandos, sessão `closed`,
+  `cleanup_errors=[]`, tarefa Ready, três portas fechadas e PostgreSQL parado.
+  Não houve chamada real de IA ou envio de documento nesse diagnóstico.
+- Grupos disponíveis no site, no resultado da busca e na consulta do bot:
+  `confirmed` e `unconfirmed`. Horário desconhecido só é exibido se os demais
+  critérios do perfil passarem. Manhã explícita permanece excluída. Confirmadas
+  prevalecem sobre uma descoberta sem horário da mesma URL canônica.
+- As pendentes são persistidas e apresentadas separadamente, sem aumentar
+  `selected`, `new_jobs` de confirmadas ou a meta. Histórico anterior é preservado.
+- Suíte final: **221 testes backend passaram em 24,23 segundos**, incluindo o banco
+  PostgreSQL descartável, que foi parado em `finally` após a auditoria.
+- Frontend: lint e build passaram; 12 testes isolados de navegador passaram,
+  incluindo a separação e seleção entre grupos. Um teste opcional de API real ficou
+  desabilitado enquanto o projeto permaneceu parado. Mocks anteriores foram
+  atualizados para a consulta que inclui o parâmetro de horários pendentes.
+- Não foi executada uma nova geração real de currículo pessoal pelo Telegram:
+  partida e acesso foram reais; geração, autorização e proteção de atividade foram
+  cobertas por testes automatizados sem inferência ou envio real.
+
+### Currículos sob demanda e disponibilidade de turno — 16/11/2026
+
+- Bridge verifica contexto privado antes de abrir a sessão interativa. Comandos
+  formais ligam frontend, API e banco. Worker exclusivo encerra apenas recursos
+  próprios após 300 segundos desde o último comando concluído.
+- Lock compartilhado protege comandos em andamento e a coleta; polling GET não
+  renova o prazo. Gerações iniciadas pelo site sinalizam atividade sem conteúdo
+  pessoal, permanecem protegidas e renovam o prazo ao terminar.
+- Consulta real `--local fontes` partiu com os serviços parados, abriu as três
+  portas e encontrou o PDF protegido atualizado. Não houve chamada real à IA ou
+  envio de documento ao Telegram nesse diagnóstico. O contexto Telegram não foi falsificado.
+- Suíte completa: **217 passaram em 29,26 segundos**, com PostgreSQL descartável.
+  Inclui autorização antes de iniciar serviços, renovação, expiração, recursos
+  manuais preservados, falha de partida e atividade protegida durante geração.
+- Perfil passou a exigir jornada a partir das 12h (São Paulo), inclusive remoto.
+  Onze testes de horários cobrem manhã, 12h, tarde, faixas horárias, flexibilidade
+  sem turno e alternativas incertas. Fixtures de testes independentes de horário
+  agora informam explicitamente jornada sintética da tarde.
+- Revalidação do lote atual: uma vaga com horário confirmado (EVOLUA/IEL, 14h–18h),
+  sem novo aviso. Anúncios sem turno publicado ficam em revisão e não completam a meta.
+- Cron e skill 1.5.0 atualizados. O cron continua às 9h; a regra das 12h é para a vaga.
+
 ### Recuperação e revisão da rodada de 16/11/2026
 
 - Usuário confirmou que ligou o PC no fim da tarde. Hermes iniciou a execução

@@ -10,7 +10,7 @@ URL = "https://carreiras.iel.org.br/SC/vaga/estagio/123/estagio-sistemas"
 def page(local="Trindade", application=True, closed=False):
     sections = {"Empresa:": "Empresa sintética", "Atividades:": "Suporte técnico em sistemas e Python.",
                 "Requisitos:": "Cursando ADS.", "Cidade:": "Florianópolis", "Local:": local,
-                "Formato de trabalho:": "Presencial"}
+                "Formato de trabalho:": "Presencial", "Horários:": "Das 13h às 17h"}
     return ("<h1>Estágio em Sistemas</h1>" + "".join(
         f"<h1>{key}</h1><div>{value}</div>" for key, value in sections.items())
         + ('<a href="https://admin-carreiras.sc.iel.org.br/logincandidato.aspx?public-job-id">'

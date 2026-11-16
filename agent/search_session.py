@@ -49,6 +49,12 @@ def stop_backend(pid):
 
 
 def run_session(config, force=False, input_path=None, notify=True, now=None):
+    from .interactive_session import service_lock
+    with service_lock(timeout=900, lock_root=RUNTIME):
+        return _run_session(config, force, input_path, notify, now)
+
+
+def _run_session(config, force=False, input_path=None, notify=True, now=None):
     now = now or datetime.now(timezone.utc)
     with daily_run.exclusive_run(RUNTIME / "search-session.lock") as acquired:
         if not acquired:

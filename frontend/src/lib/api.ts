@@ -1,4 +1,4 @@
-export type Job = { id: number; title: string; company: string; location: string; description: string; skills: string[]; source_url: string };
+export type Job = { id: number; title: string; company: string; location: string; description: string; skills: string[]; source_url: string; schedule_status?: 'confirmed' | 'unconfirmed' | null };
 export type Result = { match_score: number; summary_of_changes: string[]; missing_critical_skills: string[]; adapted_resume_markdown: string };
 export type SavedVersion = { id: string; job_id: number | null; job_title: string; company: string;
   job_description: string; source_fingerprint: string; created_at: string; data: Result };
@@ -26,7 +26,8 @@ function version(value: unknown): value is SavedVersion {
 export function jobsResponse(value: unknown): Job[] {
   if (!Array.isArray(value) || !value.every(item => object(item) && Number.isInteger(item.id)
     && Number(item.id) > 0 && [item.title, item.company, item.location, item.description, item.source_url]
-      .every(field => typeof field === "string") && strings(item.skills))) {
+      .every(field => typeof field === "string") && strings(item.skills)
+      && (item.schedule_status == null || item.schedule_status === 'confirmed' || item.schedule_status === 'unconfirmed'))) {
     throw new Error("O servidor retornou uma lista de vagas inválida. Tente atualizar.");
   }
   return value as Job[];

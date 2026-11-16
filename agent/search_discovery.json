@@ -1,6 +1,7 @@
 {
   "purpose": "Descoberta complementar pelo Hermes ou pesquisa humana; não é um scraper ou agendamento ativo.",
   "minimum_results": 10,
+  "availability": "Jornada a partir das 12h, horário de São Paulo, inclusive remoto. Turno ausente exige revisão.",
   "max_search_queries": 20,
   "channels": [
     {"name": "LinkedIn", "domains": ["br.linkedin.com", "www.linkedin.com"]},

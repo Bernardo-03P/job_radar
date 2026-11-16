@@ -3,6 +3,7 @@ from io import BytesIO
 from typing import Annotated
 from uuid import UUID
 
+from agent.formal_activity import formal_activity
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, UploadFile
 from fastapi.responses import PlainTextResponse
 from fastapi.routing import APIRoute
@@ -93,40 +94,41 @@ async def tailor_resume(resume_file: Annotated[UploadFile, File()],
                         job_id: Annotated[int | None, Form(ge=1)] = None,
                         x_resume_token: Annotated[str | None, Header()] = None):
     try:
-        if not (resume_file.filename or "").lower().endswith(".pdf"):
-            raise HTTPException(400, "Apenas formato PDF é suportado.")
-        if not job_description.strip():
-            raise HTTPException(422, "Informe a descrição da vaga.")
-        owner = resume_store.owner_hash(x_resume_token)
-        raw = await PDFParserService.extract_text_from_pdf(resume_file)
-        await resume_file.seek(0)
-        fingerprint = sha256(await resume_file.read(5 * 1024 * 1024 + 1)).hexdigest()
-        context = resume_store.context_hash(job_id, job_description)
-        async with generation_lock(f"{owner}:{fingerprint}:{context}"):
-            title, company = await run_in_threadpool(resume_store.job_metadata, db, job_id)
-            previous = await run_in_threadpool(
-                resume_store.find_version, db, owner, fingerprint, context
-            )
-            if previous is not None:
-                response = TailorResponse(data=TailorResponseData.model_validate(previous.data),
-                                         version=SavedResumeRead.model_validate(previous), cached=True)
-                await run_in_threadpool(db.rollback)
-                return response
-            # Libere a conex?o/transaction antes de aguardar a API externa.
-            await run_in_threadpool(db.rollback)
-            async with database_generation_lease(db, f"{owner}:{fingerprint}:{context}"):
-                # Outro processo pode ter conclu?do entre o primeiro SELECT e o lock.
-                previous = await run_in_threadpool(resume_store.find_version, db, owner, fingerprint, context)
+        with formal_activity():
+            if not (resume_file.filename or "").lower().endswith(".pdf"):
+                raise HTTPException(400, "Apenas formato PDF é suportado.")
+            if not job_description.strip():
+                raise HTTPException(422, "Informe a descrição da vaga.")
+            owner = resume_store.owner_hash(x_resume_token)
+            raw = await PDFParserService.extract_text_from_pdf(resume_file)
+            await resume_file.seek(0)
+            fingerprint = sha256(await resume_file.read(5 * 1024 * 1024 + 1)).hexdigest()
+            context = resume_store.context_hash(job_id, job_description)
+            async with generation_lock(f"{owner}:{fingerprint}:{context}"):
+                title, company = await run_in_threadpool(resume_store.job_metadata, db, job_id)
+                previous = await run_in_threadpool(
+                    resume_store.find_version, db, owner, fingerprint, context
+                )
                 if previous is not None:
                     response = TailorResponse(data=TailorResponseData.model_validate(previous.data),
                                              version=SavedResumeRead.model_validate(previous), cached=True)
                     await run_in_threadpool(db.rollback)
                     return response
+                # Libere a conex?o/transaction antes de aguardar a API externa.
                 await run_in_threadpool(db.rollback)
-                data = await ResumeTailorService.generate_validated(llm, raw, job_description)
-                saved = await run_in_threadpool(resume_store.save_version, db, owner, fingerprint,
-                                               context, job_id, job_description, title, company, data)
-                return TailorResponse(data=data, version=SavedResumeRead.model_validate(saved))
+                async with database_generation_lease(db, f"{owner}:{fingerprint}:{context}"):
+                    # Outro processo pode ter conclu?do entre o primeiro SELECT e o lock.
+                    previous = await run_in_threadpool(resume_store.find_version, db, owner, fingerprint, context)
+                    if previous is not None:
+                        response = TailorResponse(data=TailorResponseData.model_validate(previous.data),
+                                                 version=SavedResumeRead.model_validate(previous), cached=True)
+                        await run_in_threadpool(db.rollback)
+                        return response
+                    await run_in_threadpool(db.rollback)
+                    data = await ResumeTailorService.generate_validated(llm, raw, job_description)
+                    saved = await run_in_threadpool(resume_store.save_version, db, owner, fingerprint,
+                                                   context, job_id, job_description, title, company, data)
+                    return TailorResponse(data=data, version=SavedResumeRead.model_validate(saved))
     finally:
         await resume_file.close()
 

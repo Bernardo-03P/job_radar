@@ -6,7 +6,7 @@ test("guardar o PDF exige ação explícita, consulta após recarregar e permite
   let saved = false;
   let saves = 0;
   let generations = 0;
-  await page.route("**/api/v1/jobs?matching_profile=true", route => route.fulfill({ json: [] }));
+  await page.route("**/api/v1/jobs?matching_profile=true&include_unconfirmed_hours=true", route => route.fulfill({ json: [] }));
   await page.route("**/api/v1/resumes/versions", route => route.fulfill({ json: [] }));
   await page.route("**/api/v1/resumes/tailor", route => {
     generations += 1;

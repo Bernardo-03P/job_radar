@@ -19,6 +19,13 @@ Se due=false, termine: esta busca já foi concluída, não envie aviso extra.
 Leia agent/search_profile.json e agent/search_discovery.json. Pesquise LinkedIn, Indeed,
 InfoJobs e páginas de carreiras acessíveis publicamente, priorizando 90% estágio e 10%
 trainee em Dados/IA, Sistemas e Suporte N1. Não contorne login, captcha ou bloqueios.
+O dono só pode trabalhar a partir das 12h, no horário de São Paulo. Exclua jornadas
+que comecem antes das 12h, inclusive remotas. Extraia o horário de trabalho publicado
+na descrição. Sem horário confirmado ou com alternativas incertas, deixe para revisão;
+não deduza turno de carga horária, modalidade remota ou da expressão 'horário flexível'.
+Inclua no lote de descoberta as vagas cujo restante do perfil é compatível mas cujo
+horário não foi publicado: o script as mostrará em "Horário a confirmar", separado
+de "Horário confirmado". Essas vagas não completam a meta de confirmadas.
 Meta mínima: 10 anúncios distintos compatíveis e abertos, não dez novidades obrigatórias.
 Amplie termos e canais, incluindo IEL/SC, CIEE/SC e Super Estágios, até alcançar a meta
 ou esgotar 20 consultas úteis. Não pare nas primeiras uma ou duas vagas.

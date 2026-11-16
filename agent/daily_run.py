@@ -13,7 +13,7 @@ from dotenv import dotenv_values
 from backend.app.schemas.job import JobCreate, canonical_source_url
 
 from .collect_jobs import collect, write_json
-from .job_profile import load_profile, prioritize, profile_match
+from .job_profile import load_profile, prioritize, profile_match, schedule_group
 from .local_api import local_api_url
 from .telegram_notify import send_notification
 
@@ -120,8 +120,12 @@ def digest(report):
     if report.get("shortfall", 0):
         text.append(f"Meta: {report['minimum_results']} vagas. Faltam {report['shortfall']} validadas; "
                     "os filtros foram preservados.")
-    for job in report["new_jobs"][:5]:
+    text.append('\nHorário confirmado — início a partir das 12h:')
+    for job in report.get('matched_jobs', report['new_jobs'])[:5]:
         text.extend([f"\n#{job['id']} {job['title'][:150]} — {job['company'][:70]}", job["source_url"]])
+    text.append(f"\nHorário a confirmar: {len(report.get('pending_hours_jobs', []))} vagas; não contam como confirmadas.")
+    for job in report.get('pending_hours_jobs', [])[:5]:
+        text.extend([f"\n#{job['id']} {job['title'][:100]} — {job['company'][:50]}", job['source_url']])
     if report["failed_sources"]:
         text.append("\nBusca parcial: houve fontes indisponíveis. Confira o relatório local.")
     if report["discovery"]["status"] == "not_supplied":
@@ -162,6 +166,11 @@ def run_once(config, now=None, force=False, input_path=None, notify=True):
                 raise ValueError("Nenhuma fonte respondeu; a rodada não foi marcada como concluída.")
             unique = {job["source_url"]: job for job in jobs}
             selected = prioritize(list(unique.values()), 50, profile)
+            confirmed_urls = {job['source_url'] for job in selected}
+            pending_by_url = {item['job']['source_url']: item['job'] for item in review
+                              if item['job']['source_url'] not in confirmed_urls
+                              and schedule_group(item['job'], profile) == 'unconfirmed'}
+            pending_hours = prioritize(list(pending_by_url.values()), 50, profile)
             write_json(RUNTIME / "daily-review.json", {"checked_at": now.isoformat(), "jobs": review})
             endpoint = local_api_url(config.get("JOB_RADAR_API_URL"))
             key = config.get("INGEST_API_KEY")
@@ -171,12 +180,17 @@ def run_once(config, now=None, force=False, input_path=None, notify=True):
             pending = state.get("pending_new_jobs", [])
             new_jobs = [item for item in pending if isinstance(item, dict)]
             matched_jobs = []
-            for job in selected:
+            pending_hours_jobs = []
+            for job in selected + pending_hours:
                 response = client.post(endpoint + "/api/v1/jobs", json=job, headers={"X-API-Key": key})
                 response.raise_for_status()
                 saved = response.json()
-                matched_jobs.append({name: saved[name] for name in ("id", "title", "company", "source_url")})
-                if job["source_url"] not in existing:
+                summary = {name: saved[name] for name in ("id", "title", "company", "source_url")}
+                if job['source_url'] in confirmed_urls:
+                    matched_jobs.append(summary)
+                else:
+                    pending_hours_jobs.append(summary)
+                if job["source_url"] not in existing and job['source_url'] in confirmed_urls:
                     new_jobs.append({name: saved[name] for name in
                                      ("id", "title", "company", "source_url")})
                     existing[job["source_url"]] = saved["id"]
@@ -185,6 +199,7 @@ def run_once(config, now=None, force=False, input_path=None, notify=True):
         report = {"status": "partial" if failures else "completed", "slot": slot,
                   "checked_at": now.isoformat(), "selected": len(selected), "new_jobs": new_jobs,
                   "matched_jobs": matched_jobs,
+                  "pending_hours_jobs": pending_hours_jobs,
                   "sources": reports, "failed_sources": failures, "discovery": discovery,
                   "minimum_results": target, "meets_target": len(selected) >= target,
                   "shortfall": max(0, target - len(selected)), "review_count": len(review)}

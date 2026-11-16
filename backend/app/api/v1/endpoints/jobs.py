@@ -1,7 +1,7 @@
 import secrets
 from typing import Annotated
 
-from agent.job_profile import load_profile, profile_match, stage
+from agent.job_profile import load_profile, schedule_group, stage
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
@@ -18,7 +18,7 @@ router = APIRouter()
 @router.get("", response_model=list[JobRead])
 def list_jobs(db: Annotated[Session, Depends(get_db)], q: str = "",
               limit: int = Query(50, ge=1, le=100), offset: int = Query(0, ge=0),
-              matching_profile: bool = False):
+              matching_profile: bool = False, include_unconfirmed_hours: bool = False):
     statement = select(Job).order_by(Job.created_at.desc(), Job.id.desc())
     if q:
         query = q[:200]
@@ -28,15 +28,20 @@ def list_jobs(db: Annotated[Session, Depends(get_db)], q: str = "",
         profile = load_profile()
         unique = {}
         for job in db.scalars(statement):
-            if not profile_match({"title": job.title, "description": job.description,
-                                  "location": job.location}, profile)[0]:
+            group = schedule_group({"title": job.title, "description": job.description,
+                                    "location": job.location}, profile)
+            if group is None or group == 'unconfirmed' and not include_unconfirmed_hours:
                 continue
             key = canonical_source_url(job.source_url)
             if key not in unique or job.id < unique[key].id:
                 unique[key] = job
         matches = sorted(unique.values(), key=lambda job: (job.created_at, job.id), reverse=True)
-        matches.sort(key=lambda job: stage({"title": job.title}) != "internship")
-        return matches[offset:offset + limit]
+        matches.sort(key=lambda job: (schedule_group({'title': job.title, 'description': job.description,
+                                                     'location': job.location}, profile) != 'confirmed',
+                                      stage({"title": job.title}) != "internship"))
+        return [JobRead.model_validate(job).model_copy(update={'schedule_status': schedule_group(
+            {'title': job.title, 'description': job.description, 'location': job.location}, profile)})
+                for job in matches[offset:offset + limit]]
     return db.scalars(statement.offset(offset).limit(limit)).all()
 
 

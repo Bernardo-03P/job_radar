@@ -110,7 +110,7 @@ def ensure_backend(config, on_start=None):
     raise ValueError("O backend não ficou disponível; a tarefa tentará novamente.")
 
 
-def ensure_frontend():
+def ensure_frontend(on_start=None):
     frontend = ROOT / "frontend"
     if not (frontend / ".next/BUILD_ID").is_file():
         return "not_built"
@@ -126,8 +126,10 @@ def ensure_frontend():
     if ready():
         return "ready"
     node = executable("node")
-    spawn([node, str(frontend / "node_modules/next/dist/bin/next"), "start", str(frontend),
-           "--hostname", "127.0.0.1", "--port", "3000"], "frontend.log")
+    pid = spawn([node, str(frontend / "node_modules/next/dist/bin/next"), "start", str(frontend),
+                 "--hostname", "127.0.0.1", "--port", "3000"], "frontend.log", detached=on_start is None)
+    if on_start:
+        on_start(pid)
     for _ in range(20):
         if ready():
             return "ready"

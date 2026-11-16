@@ -80,7 +80,7 @@ export default function Home() {
         setHistoryError("Permita o armazenamento local deste site para acessar seu histórico privado.");
       }
     });
-    requestJson(`${API}/api/v1/jobs?matching_profile=true`, { signal: abort.signal }).then(body => {
+    requestJson(`${API}/api/v1/jobs?matching_profile=true&include_unconfirmed_hours=true`, { signal: abort.signal }).then(body => {
       if (!abort.signal.aborted) setJobs(jobsResponse(body));
     }).catch(err => { if (err.name !== "AbortError") setJobsError("Não foi possível carregar as vagas. Verifique o backend e o banco de dados."); })
       .finally(() => setJobsLoading(false));
@@ -245,7 +245,10 @@ export default function Home() {
                 <Radar size={28} className="mx-auto mb-3 text-zinc-600"/>
                 <p className="text-sm text-zinc-400">{jobs.length ? "Nenhuma vaga encontrada." : "Seu radar está pronto para receber vagas."}</p>
                 <p className="mt-2 text-xs leading-5 text-zinc-600">Você também pode colar uma descrição abaixo.</p>
-              </div> : filtered.map(job => <button key={job.id}
+              </div> : (['confirmed', 'unconfirmed'] as const).map(group => <section key={group} className="mb-5" aria-label={group === 'confirmed' ? 'Horário confirmado' : 'Horário a confirmar'}>
+                <h3 className="px-3 py-2 text-xs font-semibold text-zinc-300">{group === 'confirmed' ? 'Horário confirmado · a partir das 12h' : 'Horário a confirmar'}</h3>
+                {group === 'unconfirmed' && <p className="px-3 pb-2 text-xs text-zinc-500">Confirme o turno com a empresa antes de se candidatar.</p>}
+                {filtered.filter(job => (job.schedule_status || 'confirmed') === group).map(job => <button key={job.id}
                 onClick={() => { resetView(); setSelected(job); setDescription(job.description); }}
                 className={`mb-2 w-full rounded-xl border p-4 text-left transition ${selected?.id === job.id ? "border-lime-300/50 bg-lime-300/5" : "border-transparent hover:bg-white/5"}`}>
                 <div className="flex items-center justify-between gap-3"><span className="text-xs text-zinc-400">{job.company}</span>
@@ -256,7 +259,7 @@ export default function Home() {
                   className="rounded bg-white/5 px-2 py-1 text-[10px] text-zinc-400">{skill}</span>)}</div>
                 {versions[JSON.stringify([job.id, job.description])] && <span
                   className="mt-3 flex items-center gap-1 text-xs text-lime-300"><Check size={13}/>Currículo pronto</span>}
-              </button>)}
+              </button>)}</section>)}
           </div>
           <div className="border-t border-white/10 p-5">
             <label htmlFor="description" className="text-xs font-medium text-zinc-300">Descrição da vaga {selected && <span className="text-lime-300">{selected.description === description ? "· selecionada" : "· editada"}</span>}</label>

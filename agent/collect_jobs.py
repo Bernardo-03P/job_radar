@@ -126,7 +126,8 @@ def collect(client, sources, query="", location="", limit=50, profile=None):
                     report["filtered"] += 1
                     report["reasons"][reason] = report["reasons"].get(reason, 0) + 1
                     if reason in ("florianopolis_bairro_a_confirmar", "regiao_sem_endereco_confirmado",
-                                  "local_ou_elegibilidade_nao_confirmado", "n2_exige_experiencia_revisar"):
+                                  "local_ou_elegibilidade_nao_confirmado", "n2_exige_experiencia_revisar",
+                                  "horario_nao_confirmado", "horario_alternativas_a_confirmar"):
                         review.append({"reason": reason, "job": job})
                     continue
             if job["source_url"] in seen:

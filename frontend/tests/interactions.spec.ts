@@ -8,7 +8,7 @@ const job = {
 };
 
 test.beforeEach(async ({ page }) => {
-  await page.route("**/api/v1/jobs?matching_profile=true", route => route.fulfill({ json: [job] }));
+  await page.route("**/api/v1/jobs?matching_profile=true&include_unconfirmed_hours=true", route => route.fulfill({ json: [job] }));
   await page.route("**/api/v1/resumes/versions", route => route.fulfill({ json: [] }));
 });
 
@@ -65,7 +65,7 @@ test("valida arquivo incompatível e explica falha na adaptação", async ({ pag
 test("mantém uma versão por vaga e permite baixar sem nova chamada de IA", async ({ page }) => {
   const otherJob = { ...job, id: 2, title: "Engenharia de Dados", company: "Outra empresa",
     description: "Engenharia de dados com Python, SQL e construção de pipelines." };
-  await page.route("**/api/v1/jobs?matching_profile=true", route => route.fulfill({ json: [job, otherJob] }));
+  await page.route("**/api/v1/jobs?matching_profile=true&include_unconfirmed_hours=true", route => route.fulfill({ json: [job, otherJob] }));
   let calls = 0;
   await page.route("**/api/v1/resumes/tailor", route => {
     calls += 1;

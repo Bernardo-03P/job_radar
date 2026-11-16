@@ -14,6 +14,11 @@ from main import app
 
 
 @pytest.fixture(autouse=True)
+def isolate_formal_activity(tmp_path, mocker):
+    mocker.patch('agent.formal_activity.RUNTIME', tmp_path / 'activity')
+
+
+@pytest.fixture(autouse=True)
 def block_network(mocker):
     original_connect = socket.socket.connect
     original_connect_ex = socket.socket.connect_ex

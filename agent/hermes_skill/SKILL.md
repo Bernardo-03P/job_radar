@@ -1,7 +1,7 @@
 ---
 name: job-radar
 description: Consultar vagas e currículos do Job Radar, gerar para uma vaga escolhida com PDF guardado no PC e enviar a versão ao dono no Telegram, somente quando solicitado.
-version: 1.4.1
+version: 1.5.0
 platforms: [windows]
 metadata:
   hermes:
@@ -119,8 +119,22 @@ Somente o Hermes permanece ativo entre buscas. O agendamento das 9h usa
 o helper `buscar` também usa a sessão temporária. Ela liga API e banco, sem abrir
 o site, e encerra os recursos que iniciou ao terminar ou falhar. Serviços já
 abertos pelo dono permanecem ativos. Não ligue o supervisor contínuo nem reative
-a tarefa Windows JobRadar-Local-Startup. Fora da busca, consultas ao banco e
-currículos podem ficar indisponíveis; explique isso sem fingir que foram consultados.
+a tarefa Windows JobRadar-Local-Startup.
+
+Comandos formais autenticados como `fontes`, `vagas`, `gerar` e `curriculos` agora
+ligam automaticamente site, API e banco se necessário. Não peça ao dono que ligue
+o projeto antes de usar esses comandos. Após a última solicitação concluída, serviços
+iniciados pelo helper desligam após cinco minutos; novo comando renova o prazo.
+Gerações ativas, inclusive pelo site, impedem o desligamento. Consultas automáticas
+da página não renovam o prazo. Serviços abertos manualmente são preservados.
+
+O dono só aceita jornadas a partir das 12h, horário de São Paulo, inclusive remoto.
+Apresente as vagas em dois grupos: "Horário confirmado" e "Horário a confirmar".
+Use `schedule_status` nas consultas e `pending_hours_jobs` no resultado das buscas.
+As pendentes não contam como confirmadas para a meta. Vagas com início antes das
+12h ficam excluídas de ambos os grupos. Se o horário não estiver publicado, não deduza que remoto
+ou flexível significa turno da tarde. O cron de busca continua às 9h: essa restrição
+é o horário de trabalho da vaga, não o horário de coleta.
 
 ## Gerar para uma vaga escolhida
 

@@ -1,5 +1,6 @@
 {
   "minimum_results": 10,
+  "work_hours": {"earliest_start": "12:00", "timezone": "America/Sao_Paulo", "unknown": "review"},
   "internship_share": 0.9,
   "onsite_city": "Florianópolis",
   "excluded_locations": ["Palhoça", "São José", "Estreito", "Biguaçu", "Continente", "Coqueiros", "Capoeiras", "Abraão", "Balneário", "Jardim Atlântico", "Canto", "Campinas", "Barreiros"],

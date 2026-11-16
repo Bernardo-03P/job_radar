@@ -312,6 +312,34 @@ Para parar o PostgreSQL preservando os dados: `docker compose stop`.
 
 ### Operação temporária (preferência atual do proprietário)
 
+**Atualização em 16/11/2026:** pedidos formais no helper Hermes (consultar vagas,
+fontes, versões ou gerar um currículo escolhido) ligam site, API e banco sob demanda.
+Ao terminar o último pedido, começa o prazo de **300 segundos de inatividade**.
+Novo pedido renova o prazo. Solicitações ativas e gerações pelo site impedem o
+desligamento; consultas automáticas GET da página não renovam o prazo. Somente
+recursos iniciados pela sessão são encerrados. A validação privada ocorre antes
+de iniciar serviços. Não há geração ou envio de documentos ao simplesmente ligá-los.
+O `--local` permanece limitado a diagnóstico humano fora de sessões Hermes.
+
+No Windows, `agent/install_interactive_session.ps1` registra a tarefa sob demanda
+`JobRadar-Interactive-Session`, sem gatilhos de login ou horário, para manter o
+temporizador independente do processo do helper. A tarefa contínua antiga fica
+desativada. O helper só aciona essa tarefa após validar o contexto privado.
+
+Vagas precisam ter início de jornada **a partir das 12h, horário de São Paulo**,
+inclusive remotas. Horário ausente, flexibilidade genérica ou alternativas de turno
+incertas vão para revisão. A busca agendada continua às 9h nos dias úteis: não
+confundir disponibilidade profissional com o horário de coleta.
+
+A pedido do proprietário, as vagas sem turno confirmado são mostradas no grupo
+**Horário a confirmar**, separado de **Horário confirmado**, tanto no site como no
+bot. Elas não completam a meta de dez confirmadas. Horários explicitamente anteriores
+às 12h não aparecem em nenhum dos grupos. Um horário confirmado no anúncio original
+prevalece sobre uma descoberta incompleta da mesma vaga, sem duplicá-la.
+
+O comportamento de busca abaixo permanece; a indisponibilidade do helper com o
+projeto desligado foi resolvida pela inicialização sob demanda descrita acima.
+
 Somente o Hermes permanece ativo. A tarefa Windows `JobRadar-Local-Startup` está
 desativada: não há supervisor contínuo ligando o projeto no login.
 O cron existente do Hermes continua às 9h nos dias úteis, com recuperação de atrasos.

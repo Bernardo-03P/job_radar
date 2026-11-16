@@ -36,7 +36,7 @@ async def test_legacy_duplicate_is_hidden_from_recommendations_but_history_prese
     with database() as db:
         for url in ["https://example.gupy.io/jobs/123", alias({"jobId": 123})]:
             db.add(Job(title="Estágio em Dados", company="Empresa teste", location="Remoto, Brasil",
-                       description="Projetos de dados em Python e SQL.", source_url=url, skills=["Python"]))
+                       description="Projetos de dados em Python e SQL. Das 13h às 19h.", source_url=url, skills=["Python"]))
         db.commit()
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
         recommended = (await client.get("/api/v1/jobs?matching_profile=true")).json()
@@ -47,5 +47,5 @@ async def test_legacy_duplicate_is_hidden_from_recommendations_but_history_prese
 
 def test_inferred_headquarters_does_not_override_unconfirmed_vacancy_address():
     job = {"title": "Estágio em Dados", "location": "Florianópolis, Trindade, presencial",
-           "description": "Python e SQL. Anúncio não especifica bairro; confirmar endereço exato."}
+           "description": "Python e SQL. Das 13h às 19h. Anúncio não especifica bairro; confirmar endereço exato."}
     assert profile_match(job, load_profile()) == (False, "florianopolis_bairro_a_confirmar")

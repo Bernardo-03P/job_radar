@@ -8,7 +8,7 @@ from agent import daily_run, hermes_bridge, runtime, telegram_notify
 NOW = datetime(2026, 11, 13, 15, 0, tzinfo=timezone.utc)
 CONFIG = {"INGEST_API_KEY": "synthetic-ingest", "JOB_RADAR_API_URL": "http://127.0.0.1:8000"}
 RAW = {"title": "Estágio em Dados", "location": {"name": "Remoto, Brasil"},
-       "content": "<p>Desenvolver análises com Python e SQL em dados públicos.</p>",
+       "content": "<p>Desenvolver análises com Python e SQL em dados públicos. Das 13h às 19h.</p>",
        "absolute_url": "https://job-boards.greenhouse.io/example/jobs/1"}
 
 
@@ -103,6 +103,36 @@ def test_stale_discovery_is_rejected(automation, tmp_path):
     path.write_text(json.dumps({"checked_at": "2020-01-01T00:00:00+00:00", "jobs": []}))
     with pytest.raises(ValueError):
         daily_run.discovery_jobs(path, NOW, daily_run.load_profile())
+
+
+def test_unknown_hours_are_visible_separately_without_inflating_target(automation, tmp_path):
+    _, _, posts = automation
+    path = tmp_path / 'pending.json'
+    path.write_text(json.dumps({'checked_at': NOW.isoformat(), 'jobs': [{
+        'title': 'Estágio em Suporte', 'company': 'Empresa teste', 'location': 'Remoto, Brasil',
+        'description': 'Suporte técnico com Python. Horário não informado.',
+        'source_url': 'https://example.com/pending', 'skills': ['Python']}]}), encoding='utf-8')
+    report = daily_run.run_once(CONFIG, now=NOW, input_path=path)
+    assert report['selected'] == 1
+    assert report['shortfall'] == 9
+    assert len(report['pending_hours_jobs']) == 1
+    assert len(report['new_jobs']) == 1
+    assert len(posts) == 2
+    assert 'Horário a confirmar' in daily_run.digest(report)
+
+
+def test_confirmed_original_wins_over_unknown_discovery_of_same_job(automation, tmp_path):
+    _, _, posts = automation
+    path = tmp_path / 'duplicate-pending.json'
+    path.write_text(json.dumps({'checked_at': NOW.isoformat(), 'jobs': [{
+        'title': 'Estágio em Dados', 'company': 'Empresa teste', 'location': 'Remoto, Brasil',
+        'description': 'Projetos Python e SQL, turno não informado.',
+        'source_url': RAW['absolute_url'], 'skills': ['Python']}]}), encoding='utf-8')
+    report = daily_run.run_once(CONFIG, now=NOW, input_path=path)
+    assert report['selected'] == 1
+    assert len(report['matched_jobs']) == 1
+    assert report['pending_hours_jobs'] == []
+    assert len(posts) == 1
 
 
 def test_pending_new_jobs_survive_partial_ingestion_failure(automation):

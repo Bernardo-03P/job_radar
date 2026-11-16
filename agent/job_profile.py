@@ -4,6 +4,8 @@ import re
 import unicodedata
 from pathlib import Path
 
+from .work_hours import check_hours
+
 PROFILE_PATH = Path(__file__).with_name("search_profile.json")
 
 
@@ -43,6 +45,9 @@ def profile_match(job, profile):
     if n2 and re.search(r"(?:experiencia|vivencia).{0,70}(?:obrigatori|necessari|minim|[1-9]\s*anos)|"
                         r"[1-9]\s*anos?.{0,40}experiencia", text):
         return False, "n2_exige_experiencia_revisar"
+    compatible_hours, hours_reason = check_hours(title + '\n' + text, profile.get('work_hours'))
+    if not compatible_hours:
+        return False, hours_reason
     hybrid = re.search(r"hibrid|hybrid|presencial|on.?site", location + " " + title)
     hybrid = hybrid or re.search(r"(?:modelo|regime|modalidade) de trabalho.{0,20}(?:hibrid|presencial)", text)
     remote = re.search(r"remot|telecommute|home office", location + " " + title)
@@ -72,6 +77,16 @@ def profile_match(job, profile):
                 return True, "florianopolis_ilha"
         return False, "florianopolis_bairro_a_confirmar"
     return False, "local_ou_elegibilidade_nao_confirmado"
+
+
+def schedule_group(job, profile):
+    matched, reason = profile_match(job, profile)
+    if matched:
+        return 'confirmed'
+    if reason in ('horario_nao_confirmado', 'horario_alternativas_a_confirmar'):
+        if profile_match(job, profile | {'work_hours': None})[0]:
+            return 'unconfirmed'
+    return None
 
 
 def prioritize(jobs, limit, profile):

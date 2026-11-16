@@ -121,6 +121,39 @@ def search_now(config, include_discovery=False):
     return {**result, "reply_in_current_chat": True, "automatic_notification": False}
 
 
+def execute_command(args, config):
+    if args.command == "status":
+        result = {"backend": api_request(config, "GET", "/health"),
+                  "versoes_listadas": len(api_request(config, "GET", "/api/v1/resumes/versions"))}
+    elif args.command == "vagas":
+        result = api_request(config, "GET", "/api/v1/jobs",
+                             {"q": args.query, "limit": 20, "matching_profile": "true", "include_unconfirmed_hours": "true"})
+        result = [{key: item[key] for key in ("id", "title", "company", "location", "skills", "source_url", "schedule_status")}
+                  for item in result]
+    elif args.command == "curriculos":
+        result = [summary(item) for item in api_request(config, "GET", "/api/v1/resumes/versions",
+                                                       {"q": args.query, "limit": 20})]
+    elif args.command == "fontes":
+        result = api_request(config, "GET", "/api/v1/resumes/sources")
+    elif args.command == "gerar":
+        result = generate_selected(config, args.job_id, args.source_id, args.confirmar)
+    elif args.command == "buscar":
+        result = search_now(config, args.incluir_descoberta)
+    else:
+        if not args.version_id:
+            raise ValueError("Informe o ID completo de uma versão salva.")
+        path = f"/api/v1/resumes/versions/{args.version_id}"
+        if args.command == "excluir":
+            result = api_request(config, "DELETE", path)
+        else:
+            version = api_request(config, "GET", path)
+            result = send_document(config, version) if args.command == "enviar" else {
+                **summary(version), "adapted_resume_markdown": version["data"]["adapted_resume_markdown"],
+                "missing_critical_skills": version["data"]["missing_critical_skills"],
+            }
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--local", action="store_true", help="Diagnóstico pelo terminal local, fora de sessões Hermes")
@@ -135,35 +168,16 @@ def main():
     config = dotenv_values(ROOT / ".env")
     try:
         require_private_context(config, local=args.local)
-        if args.command == "status":
-            result = {"backend": api_request(config, "GET", "/health"),
-                      "versoes_listadas": len(api_request(config, "GET", "/api/v1/resumes/versions"))}
-        elif args.command == "vagas":
-            result = api_request(config, "GET", "/api/v1/jobs",
-                                 {"q": args.query, "limit": 10, "matching_profile": "true"})
-            result = [{key: item[key] for key in ("id", "title", "company", "location", "skills", "source_url")}
-                      for item in result]
-        elif args.command == "curriculos":
-            result = [summary(item) for item in api_request(config, "GET", "/api/v1/resumes/versions",
-                                                           {"q": args.query, "limit": 20})]
-        elif args.command == "fontes":
-            result = api_request(config, "GET", "/api/v1/resumes/sources")
-        elif args.command == "gerar":
-            result = generate_selected(config, args.job_id, args.source_id, args.confirmar)
-        elif args.command == "buscar":
-            result = search_now(config, args.incluir_descoberta)
+        if args.command == "gerar" and (not args.confirmar or not args.source_id or not args.job_id or args.job_id <= 0):
+            raise ValueError("Escolha uma vaga e um PDF guardado e confirme a geração.")
+        if args.command == "buscar":
+            result = execute_command(args, config)
         else:
-            if not args.version_id:
-                parser.error("Informe o ID completo de uma versão salva.")
-            path = f"/api/v1/resumes/versions/{args.version_id}"
-            if args.command == "excluir":
-                result = api_request(config, "DELETE", path)
-            else:
-                version = api_request(config, "GET", path)
-                result = send_document(config, version) if args.command == "enviar" else {
-                    **summary(version), "adapted_resume_markdown": version["data"]["adapted_resume_markdown"],
-                    "missing_critical_skills": version["data"]["missing_critical_skills"],
-                }
+            if str(ROOT) not in sys.path:
+                sys.path.insert(0, str(ROOT))
+            from agent.interactive_session import request_context
+            with request_context(config):
+                result = execute_command(args, config)
         print(json.dumps(result, ensure_ascii=True))
     except (PermissionError, ValueError) as error:
         parser.exit(1, str(error) + "\n")
